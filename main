@@ -1,0 +1,51 @@
+package Jumper;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
+
+public class main extends JavaPlugin {
+	public ArrayList<String> inJump = new ArrayList<>();
+	public HashMap<String, Location> oldLoc = new HashMap<>();
+	public HashMap<String, ItemStack[]> oldItems = new HashMap<>();
+	public String prefix = "§7[§bJump§7] ";
+	public String noperm = "§7[§bJump§7] §4You don´t have permission!";
+	public String help = "§7[§bJump§7] §6Help: /Jumper help";
+	@Override
+	public void onEnable(){
+		System.out.println("[JUMPER] Plugin Version " + this.getDescription().getVersion() + " loaded!");
+		new Listeners(this);
+		getCommand("Jumper").setExecutor(new Commands(this));
+		
+		
+		
+	}
+	
+	@SuppressWarnings("deprecation")
+	public void leaveArena(Player p){
+		if(inJump.contains(p.getName())){
+			inJump.remove(p.getName());
+			p.getInventory().clear();
+			ItemStack[] old = oldItems.get(p.getName());
+			p.getInventory().setContents(old);
+			p.updateInventory();
+			
+			Location loc = oldLoc.get(p.getName());
+			p.teleport(loc);
+			
+			p.sendMessage(prefix + "§8You left the Jump arena, thanks for playing!");
+			
+			
+			
+		}else{
+			p.sendMessage(prefix + "§cYou are not in the Jump arena!");
+		}
+	}
+	
+	
+
+}
