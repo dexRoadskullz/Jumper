@@ -1,0 +1,131 @@
+package Jumper;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
+
+
+public class Commands implements CommandExecutor {
+
+	private main plugin;
+
+
+
+	public Commands(main main) {
+		this.plugin = main;
+	}
+
+	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+		
+		
+		if(sender instanceof Player){
+			Player p = (Player) sender;
+			if(args.length != 1){
+				
+				p.sendMessage(plugin.help);
+			
+			}else{
+				
+				if(args[0].equalsIgnoreCase("join")){
+					joinArena(p);
+				}else
+				if(args[0].equalsIgnoreCase("leave")){
+					plugin.leaveArena(p);
+				}else
+				if(args[0].equalsIgnoreCase("help")){
+			
+					sendHelp(p);
+				}else
+				if(args[0].equalsIgnoreCase("setspawn")){
+					setSpawn(p);
+				}else{
+					p.sendMessage(plugin.help);
+				}
+			}
+			
+		}else{
+			sender.sendMessage("You must be a player!");
+		}
+		
+		return true;
+	}
+	
+	//==================METHODE========================
+	public void sendHelp(Player p){
+		
+		p.sendMessage("§3[]===============[  §b§1Jumper Help §3  ] ===============[]");
+		p.sendMessage("§1Version: §e" + plugin.getDescription().getVersion());
+		p.sendMessage("§1Developer: §eRoadSkullz");
+		p.sendMessage("§3<<==============§6[COMMANDS]§3==================>>");
+		p.sendMessage("§1/jump join - §6<§eTo Joining a Jump arena.§6>");
+		p.sendMessage("§1/jumper leave - §6<§eTo leave the joined arena.§6>");
+		p.sendMessage("§1/jumper help - §6<§eTo see this help.§6>");
+		p.sendMessage("§1/jumper setspawn - §6<§eTo set the Jump spawn.§6>");
+		p.sendMessage("");
+		
+	}
+	public void setSpawn(Player p){
+		
+		if(p.hasPermission("jumper.setSpawn")){
+			String World = p.getWorld().getName();
+			double x = p.getLocation().getX();
+			double y = p.getLocation().getY();
+			double z = p.getLocation().getZ();
+			double yaw = p.getLocation().getYaw();
+			double pitch = p.getLocation().getPitch();
+			
+			FileConfiguration cfg = plugin.getConfig();
+			cfg.set("World", World);
+			cfg.set("PosX", x);
+			cfg.set("PosY", y);
+			cfg.set("PosZ", z);
+			cfg.set("PosYaw", yaw);
+			cfg.set("PosPitch", pitch);
+			plugin.saveConfig();
+			p.sendMessage(plugin.prefix + "§8The spawn for the Jump arena was set and saved successfully!");
+			
+		}else
+			p.sendMessage(plugin.noperm);
+	}
+	public void joinArena(Player p ){
+		if(!plugin.inJump.contains(p.getName())){
+			try{
+			plugin.inJump.add(p.getName());
+			plugin.oldLoc.put(p.getName(), p.getLocation());
+			plugin.oldItems.put(p.getName(), p.getInventory().getContents());
+			p.getInventory().clear();
+			p.updateInventory();
+			
+			
+			FileConfiguration cfg = plugin.getConfig();
+			
+			String World = cfg.getString("World");
+			double x = cfg.getDouble("PosX");
+			double y = cfg.getDouble("PosY");
+			double z = cfg.getDouble("PosZ");
+			double yaw = cfg.getDouble("PosYaw");
+			double pitch = cfg.getDouble("PosPitch");
+			Location loc = new Location(Bukkit.getWorld(World), x, y, z);
+			loc.setPitch((float) pitch);
+			loc.setYaw((float) yaw);
+			
+			p.teleport(loc);
+			p.sendMessage(plugin.prefix + "§6You are now in the Jump arena! §aGood Luck!");
+			}catch (Exception e){
+				p.sendMessage(plugin.prefix + "§cThere´s a mistake! Please contact the Server Admin! §6Do /jumper leave");
+			}
+			
+			
+		}else{
+			p.sendMessage(plugin.prefix + "§cYou are already in the Jump arena! '/jumper leave' to leave the arena!");
+		}
+	}
+	
+
+}
+
+
