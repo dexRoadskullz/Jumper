@@ -1,0 +1,192 @@
+package Jumper;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Effect;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Sound;
+import org.bukkit.block.Block;
+import org.bukkit.block.Sign;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+
+public class Listeners implements Listener {
+
+	private main plugin;
+
+	public Listeners(main main) {
+		this.plugin = main;
+		this.plugin.getServer().getPluginManager().registerEvents(this, plugin);
+	}
+	
+	@EventHandler
+	public void onFeed(FoodLevelChangeEvent e) {
+		if(e.getEntity() instanceof Player){
+			Player p = (Player) e.getEntity();
+			if(plugin.inJump.contains(p.getName())){
+				e.setCancelled(true);
+			}
+		}
+	}
+	@EventHandler 
+	public void onItemDrop(PlayerDropItemEvent e){
+		if(plugin.inJump.contains(e.getPlayer().getName())){
+			e.setCancelled(true);
+		}
+	}
+	@EventHandler
+	public void onPickup(PlayerPickupItemEvent e){
+		if(plugin.inJump.contains(e.getPlayer().getName())){
+			e.setCancelled(true);
+		}
+	}
+	@EventHandler
+	public void onCommandDeny(PlayerCommandPreprocessEvent e){
+		if(plugin.inJump.contains(e.getPlayer().getName())){
+			if(!e.getMessage().contains("/jumper")) {
+				e.setCancelled(true);
+				e.getPlayer().sendMessage(plugin.prefix + "that Command is not allowed in the Jump arena! §c[" + e.getMessage() + "§c]");
+				
+			}
+			
+	
+		}
+	}
+
+	@EventHandler
+	public void onBlockBreak(BlockBreakEvent e){
+		if(plugin.inJump.contains(e.getPlayer().getName())){
+			e.setCancelled(true);
+		}
+	}
+	@EventHandler
+	public void onBlockPlace(BlockPlaceEvent e){
+		if(plugin.inJump.contains(e.getPlayer().getName())){
+			e.setCancelled(true);
+		}
+	}
+	@EventHandler 
+	public void onSignChange(SignChangeEvent e){
+		if(e.getPlayer().hasPermission("Jumper.sign")){
+			if(e.getLine(0).equalsIgnoreCase("[jumper]")) {
+				e.setLine(0, "§b§oJumper");
+				e.setLine(1, "§b§oFinish");
+				
+			}
+		}
+	}
+	@EventHandler
+	public void onSignInteract(PlayerInteractEvent e){
+		Player p =  e.getPlayer();
+		if(plugin.inJump.contains(p.getName())){
+			if(e.getAction() == Action.RIGHT_CLICK_BLOCK){
+				if(e.getClickedBlock().getState() instanceof Sign){
+					Sign s = (Sign) e.getClickedBlock().getState();
+					
+					if(s.getLine(0).equalsIgnoreCase("§b§oJumper")){
+						if(s.getLine(1).equalsIgnoreCase("§b§oFinish")){
+							
+							
+							plugin.inJump.remove(p.getName());
+							
+							p.getInventory().clear();
+							ItemStack[] old = plugin.oldItems.get(p.getName());
+							p.getInventory().setContents(old);
+							p.updateInventory();
+							
+							Location loc = plugin.oldLoc.get(p.getName());
+							p.teleport(loc);
+							
+							p.sendMessage(plugin.prefix + "You have sussesfull finish the Jump!");
+							p.sendMessage(plugin.prefix + "You get 2 Diamonds for winning the Jump arena!");
+							p.getInventory().addItem(new ItemStack(Material.DIAMOND, 2));
+						}
+					}
+				}
+				
+			}
+		}
+	}
+	@EventHandler
+	public void onQuit(PlayerQuitEvent e){
+		if(plugin.inJump.contains(e.getPlayer().getName())){
+			
+			plugin.leaveArena(e.getPlayer());
+			
+		}
+	}
+	@EventHandler
+	public void onPlayerDamage(EntityDamageEvent e){
+		if(e.getEntity() instanceof Player){
+			Player p = (Player) e.getEntity();
+			if(plugin.inJump.contains(p.getName())){
+				e.setCancelled(true);
+			}
+		}
+	}
+	
+	@EventHandler
+	public void onPlayerMove(PlayerMoveEvent e){
+		
+		if(plugin.inJump.contains(e.getPlayer().getName())){
+			Player p = e.getPlayer();
+			Block b = p.getLocation().subtract(0.0D, 1.0D, 0.0D).getBlock();
+			
+			
+			
+			if(b.getType() == Material.GOLD_BLOCK){
+				p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 20*5, 3));
+				p.playSound(p.getLocation(), Sound.GHAST_SCREAM, 3, 2);
+				
+
+			}
+			if(b.getType() == Material.GLASS){
+				
+				teleportToSpawn(p);
+			}
+		}
+	}
+
+	
+	
+	
+	
+	private void teleportToSpawn(Player p) {
+		
+		FileConfiguration cfg = plugin.getConfig();
+		
+		String World = cfg.getString("World");
+		double x = cfg.getDouble("PosX");
+		double y = cfg.getDouble("PosY");
+		double z = cfg.getDouble("PosZ");
+		double yaw = cfg.getDouble("PosYaw");
+		double pitch = cfg.getDouble("PosPitch");
+		Location loc = new Location(Bukkit.getWorld(World), x, y, z);
+		loc.setPitch((float) pitch);
+		loc.setYaw((float) yaw);
+		
+		p.teleport(loc);
+		p.sendMessage(plugin.prefix + "§6New Chance!");
+		p.playEffect(p.getLocation(), Effect.GHAST_SHOOT, 3);
+		
+	}
+}
+	
+
